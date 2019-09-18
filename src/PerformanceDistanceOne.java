@@ -135,14 +135,14 @@ public class PerformanceDistanceOne {
                 ProbBisimilarity probBis = new ProbBisimilarity(numOfStates, labels, trans);
                 bisimulationSet = probBis.computeProbabilisticBisimilarity();
                 long bisimulationTime = System.nanoTime();
-                System.out.println("Bisimulation time = " + (bisimulationTime - startTime)/1-000-000 + "ms");
+                System.out.println("Bisimulation time = " + (bisimulationTime - startTime)/1_000_000 + "ms");
                 System.out.println("bisimulationSet size = " + bisimulationSet.size());
                 //System.out.println(bisimulationSet);
 
                 DistanceOne distanceOne = new DistanceOne(numOfStates, labels, trans, bisimulationSet);
                 Set<Pair> distanceOneSet = distanceOne.getDistanceOneSet();
                 long disOneTime = System.nanoTime();
-                System.out.println("Distance one time = " + (disOneTime - bisimulationTime)/1-000-000 + "ms");
+                System.out.println("Distance one time = " + (disOneTime - bisimulationTime)/1_000_000 + "ms");
                 System.out.println("Distance one size = " + distanceOneSet.size());
                 //System.out.println(distanceOneSet);
             }
