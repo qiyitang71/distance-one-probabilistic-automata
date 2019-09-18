@@ -9,15 +9,15 @@ public class DistanceOne {
     private Set<Pair> diffLabelsSet;
     private Set<Pair> nonZeroSet;
     private int numMinCostFlow = 0;
-
+    
     private double solveMinCostFlow(DistributionAjaList mu, DistributionAjaList nu, Set<Pair> set) {
         numMinCostFlow++;
-
+        
         MinCostMaxFlow flow = new MinCostMaxFlow();
         int num = this.numOfStates * 2 + 2;
         double[][] cap = new double[num][num];
         double[][] cost = new double[num][num];
-
+        
         // Initialize the capacity and cost arrays
         for(int i = 0; i < num; i++){
             cap[i] = new double[num];
@@ -27,23 +27,25 @@ public class DistanceOne {
         for (int i = 0; i < this.numOfStates; ++i) {
             for (int j = this.numOfStates; j < 2 * this.numOfStates; j++) {
                 cap[i][j] = Math.min(mu.getProbability(i), nu.getProbability(j - this.numOfStates));
-                Pair pair = new Pair(i, j - this.numOfStates);
-                if (set.contains(pair)) {
-                    cost[i][j] = 1;
-                }
             }
         }
-
+        for (Pair p : set) {
+            int r = p.getRow();
+            int c = p.getColumn();
+            cost[r][c + this.numOfStates] = 1;
+            cost[c][r + this.numOfStates] = 1;
+        }
+        
         //add arcs from source and to target
         for (int i = 0; i < this.numOfStates; i++) {
             cap[this.numOfStates * 2][i] = mu.getProbability(i);
             cap[i + this.numOfStates][this.numOfStates * 2 + 1] = nu.getProbability(i);
         }
-
+        
         double[] res = flow.getMaxFlow(cap, cost, this.numOfStates * 2, this.numOfStates * 2 + 1);
         return res[1];
     }
-
+    
     public DistanceOne(int numOfStates, int[] labels, Map<Integer, Set<DistributionAjaList>> transitions, Set<Pair> bisimulationSet) {
         this.numOfStates = numOfStates;
         this.labels = labels;
@@ -52,7 +54,7 @@ public class DistanceOne {
         this.diffLabelsSet = new HashSet<>();
         this.nonZeroSet = new HashSet<>();
     }
-
+    
     //Given two distributions mu and nu, check if all support of couplings of \Omega(mu, nu) intersect with the given set
     private boolean isCouplingsIntersect(DistributionAjaList mu, DistributionAjaList nu, Set<Pair> set) {
         double cost = solveMinCostFlow(mu, nu, set);
@@ -62,13 +64,13 @@ public class DistanceOne {
         }
         return false;
     }
-
+    
     //Given two distributions mu and nu, check if all support of couplings of \Omega(mu, nu) is subset of the given set
     private boolean isCouplingsSubset(DistributionAjaList mu, DistributionAjaList nu, Set<Pair> set) {
         //brute-force
         Set<Integer> muSet = new HashSet<>();
         Set<Integer> nuSet = new HashSet<>();
-
+        
         for (int i = 0; i < this.numOfStates; i++) {
             if (mu.getProbability(i) > 0) {
                 muSet.add(i);
@@ -86,7 +88,7 @@ public class DistanceOne {
         }
         return true;
     }
-
+    
     private void getPairOfDiffLabels() {
         for (int i = 0; i < this.numOfStates; i++) {
             for (int j = 0; j < i; j++) {
@@ -96,7 +98,7 @@ public class DistanceOne {
             }
         }
     }
-
+    
     private void getNonZeroPairs() {
         for (int i = 0; i < this.numOfStates; i++) {
             for (int j = 0; j < i; j++) {
@@ -107,7 +109,7 @@ public class DistanceOne {
             }
         }
     }
-
+    
     private Set<Pair> applyGamma(Set<Pair> setX, Set<Pair> setY) {
         Set<Pair> newSet = this.nonZeroSet.parallelStream().filter(p -> {
             int s = p.getRow();
@@ -117,11 +119,11 @@ public class DistanceOne {
             }
             return false;
         }).collect(Collectors.toSet());
-
+        
         newSet.addAll(this.diffLabelsSet);
         return newSet;
     }
-
+    
     private boolean applyGammaHelper(int s, int t, Set<Pair> setX, Set<Pair> setY) {
         for (DistributionAjaList mu : this.transitions.get(s)) {
             boolean isSatisfy = true;
@@ -137,7 +139,7 @@ public class DistanceOne {
         }
         return false;
     }
-
+    
     private Set<Pair> applyGammaIntersect(Set<Pair> setY) {
         Set<Pair> newSet = this.nonZeroSet.parallelStream().filter(p -> {
             int s = p.getRow();
@@ -147,11 +149,11 @@ public class DistanceOne {
             }
             return false;
         }).collect(Collectors.toSet());
-
+        
         newSet.addAll(this.diffLabelsSet);
         return newSet;
     }
-
+    
     private boolean applyGammaIntersectHelper(int s, int t, Set<Pair> setY) {
         for (DistributionAjaList mu : this.transitions.get(s)) {
             boolean isSatisfy = true;
@@ -167,15 +169,15 @@ public class DistanceOne {
         }
         return false;
     }
-
+    
     public Set<Pair> getDistanceOneSet() {
         //calculate diffLabelsSet and nonZeroSet
         getPairOfDiffLabels();
         getNonZeroPairs();
         System.out.println("dif labels size = " + this.diffLabelsSet.size());
         System.out.println("non-zero size = " + this.nonZeroSet.size());
-
-
+        
+        
         //get the initial setX and setY
         Set<Pair> set = new HashSet<>();
         Set<Pair> setNew = new HashSet<>();
@@ -184,13 +186,13 @@ public class DistanceOne {
             outerloop++;
             set.addAll(setNew);
             setNew = applyGammaIntersect(set);
-
-        } while (!set.equals(setNew));
+            
+        } while (setNew.size() != set.size());
         //the main algorithm
         // calculate an interplay of gfp and lfp
         Set<Pair> setX = new HashSet(set);
         Set<Pair> setXPrevious;
-
+        
         outerloop = 0;
         do {
             outerloop++;
@@ -201,18 +203,15 @@ public class DistanceOne {
                 innerloop++;
                 setYPrevious.addAll(setY);
                 setY = applyGamma(setX, setYPrevious);
-            } while (!setY.equals(setYPrevious));
-
-            setXPrevious = new HashSet();
-            setXPrevious.addAll(setX);
-            setX = new HashSet();
-            setX.addAll(setY);
-        } while (!setX.equals(setXPrevious));
+            } while (setY.size() != setYPrevious.size());
+            
+            setXPrevious = new HashSet(setX);
+            setX = new HashSet(setY);
+        } while (setX.size() != setXPrevious.size());
         System.out.println("Number of mincostflow  = " + numMinCostFlow);
         return setX;
     }
-
+    
 }
-
 
 
