@@ -1,4 +1,5 @@
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DistanceOne {
     private int numOfStates;
@@ -108,14 +109,15 @@ public class DistanceOne {
     }
 
     private Set<Pair> applyGamma(Set<Pair> setX, Set<Pair> setY) {
-        Set<Pair> newSet = new HashSet<>();
-        for (Pair p : this.nonZeroSet) {
+        Set<Pair> newSet = this.nonZeroSet.parallelStream().filter(p -> {
             int s = p.getRow();
             int t = p.getColumn();
             if (applyGammaHelper(s, t, setX, setY) || applyGammaHelper(t, s, setX, setY)) {
-                newSet.add(p);
+                return true;
             }
-        }
+            return false;
+        }).collect(Collectors.toSet());
+
         newSet.addAll(this.diffLabelsSet);
         return newSet;
     }
@@ -137,14 +139,15 @@ public class DistanceOne {
     }
 
     private Set<Pair> applyGammaIntersect(Set<Pair> setY) {
-        Set<Pair> newSet = new HashSet<>();
-        for (Pair p : this.nonZeroSet) {
+        Set<Pair> newSet = this.nonZeroSet.parallelStream().filter(p -> {
             int s = p.getRow();
             int t = p.getColumn();
             if (applyGammaIntersectHelper(s, t, setY) || applyGammaIntersectHelper(t, s, setY)) {
-                newSet.add(p);
+                return true;
             }
-        }
+            return false;
+        }).collect(Collectors.toSet());
+
         newSet.addAll(this.diffLabelsSet);
         return newSet;
     }
@@ -210,5 +213,6 @@ public class DistanceOne {
     }
 
 }
+
 
 
